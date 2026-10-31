@@ -1,0 +1,52 @@
+name: deploy
+
+# Tests and builds the app, then publishes it to GitHub Pages on every push to
+# main. In a new copy of the repository, first set Settings > Pages > Source to
+# "GitHub Actions" (see docs/DEPLOYMENT.md).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: osteomap
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: osteomap/.nvmrc
+          cache: npm
+          cache-dependency-path: osteomap/package-lock.json
+      # Reports the path the site is served from: /<repository>/ for a project
+      # site, or the domain root for a user site or a custom domain.
+      - id: pages
+        uses: actions/configure-pages@v5
+      - run: npm ci
+      - run: npm test
+      - run: npm run build -- --base="${{ steps.pages.outputs.base_path }}/"
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: osteomap/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

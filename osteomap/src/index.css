@@ -1,0 +1,650 @@
+@import "tailwindcss";
+
+:root {
+  --text: #6b6375;
+  --text-h: #08060d;
+  --bg: #fff;
+  --border: #e5e4e7;
+  --code-bg: #f4f3ec;
+  --accent: #aa3bff;
+  --accent-bg: rgba(170, 59, 255, 0.1);
+  --accent-border: rgba(170, 59, 255, 0.5);
+  --social-bg: rgba(244, 243, 236, 0.5);
+  --bone-selected: #c77dff;
+  --bone-unmarked: #e2e8f0;
+  --bone-unmarked-edge: #94a3b8;
+  --bone-expandable: #fde68a;
+  --bone-expandable-edge: #b45309;
+  --paint-present: #34d399;
+  --paint-present-edge: #047857;
+  --paint-absent: #f87171;
+  --paint-absent-edge: #b91c1c;
+  --paint-fragmentary: #60a5fa;
+  --paint-fragmentary-edge: #1d4ed8;
+  --paint-partial: #c084fc;
+  --paint-partial-edge: #7e22ce;
+  --shadow:
+    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+
+  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+
+  font: 18px/145% var(--sans);
+  letter-spacing: 0.18px;
+  color-scheme: light dark;
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  @media (max-width: 1024px) {
+    font-size: 16px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #9ca3af;
+    --text-h: #f3f4f6;
+    --bg: #16171d;
+    --border: #2e303a;
+    --code-bg: #1f2028;
+    --accent: #c084fc;
+    --accent-bg: rgba(192, 132, 252, 0.15);
+    --accent-border: rgba(192, 132, 252, 0.5);
+    --social-bg: rgba(47, 48, 58, 0.5);
+    --bone-selected: #a855f7;
+    --paint-present: #10b981;
+    --paint-present-edge: #6ee7b7;
+    --paint-absent: #ef4444;
+    --paint-absent-edge: #fca5a5;
+    --paint-fragmentary: #3b82f6;
+    --paint-fragmentary-edge: #93c5fd;
+    --paint-partial: #a855f7;
+    --paint-partial-edge: #d8b4fe;
+    --shadow:
+      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+  }
+
+  #social .button-icon {
+    filter: invert(1) brightness(2);
+  }
+}
+
+#root {
+  margin: 0 auto;
+  text-align: center;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: #f4f5f7;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+/* Fills the #root column so the task bar has something to be pushed to the
+   bottom of, even before the diagram makes the page taller than the viewport. */
+.skeleton-page {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-height: 100dvh;
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.search-results-scrollbar {
+  scrollbar-width: auto;
+  scrollbar-color: #94a3b8 transparent;
+
+  &::-webkit-scrollbar {
+    width: 12px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 999px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    min-height: 36px;
+    background: #94a3b8;
+    border: 0;
+    border-radius: 999px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+  }
+
+  &::-webkit-scrollbar-button,
+  &::-webkit-scrollbar-button:vertical:decrement,
+  &::-webkit-scrollbar-button:vertical:increment,
+  &::-webkit-scrollbar-button:vertical:start:decrement,
+  &::-webkit-scrollbar-button:vertical:end:increment {
+    display: none !important;
+    width: 0;
+    height: 0;
+    background: none;
+    -webkit-appearance: none;
+  }
+}
+
+/* Animated top sub-bar for skull view - fully hardware accelerated with 0 layout reflow */
+.skull-sub-bar-wrapper,
+.skeleton-sub-bar-wrapper {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  overflow: hidden;
+  z-index: 25;
+  pointer-events: none;
+}
+
+.skull-sub-bar-content,
+.skeleton-sub-bar-content {
+  opacity: 0;
+  transform: translate3d(0, -100%, 0);
+  box-shadow: 0 4px 14px -2px rgba(14, 165, 233, 0.12);
+  transition:
+    transform 350ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 350ms cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+
+.skeleton-sub-bar-content {
+  box-shadow: 0 4px 14px -2px rgba(15, 23, 42, 0.08);
+}
+
+.skull-sub-bar-wrapper.is-visible,
+.skeleton-sub-bar-wrapper.is-visible {
+  pointer-events: auto;
+}
+
+.skull-sub-bar-wrapper.is-visible .skull-sub-bar-content,
+.skeleton-sub-bar-wrapper.is-visible .skeleton-sub-bar-content {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  pointer-events: auto;
+  transition:
+    transform 500ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 500ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.skeleton-diagram {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  .diagram-layer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    inset: 0;
+    padding: 48px 8px calc(92px + env(safe-area-inset-bottom));
+    width: 100%;
+    height: 100%;
+    pointer-events: auto;
+    contain: layout;
+    touch-action: none;
+  }
+
+  /* Detail drawings also sit below their sub-bar and title, so none of a
+     drawing starts out hidden behind them. */
+  .detail-layer {
+    padding-top: 104px;
+  }
+
+  /* Names whatever is zoomed into, just under the sub-bar. It drops in with the
+     detail drawing and fades back out as the view zooms away. */
+  .detail-title {
+    position: absolute;
+    top: 64px;
+    left: 50%;
+    z-index: 10;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate3d(-50%, -6px, 0);
+    transition:
+      opacity 300ms cubic-bezier(0.4, 0, 0.2, 1),
+      transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .detail-title.is-visible {
+    opacity: 1;
+    transform: translate3d(-50%, 0, 0);
+    transition:
+      opacity 450ms cubic-bezier(0.16, 1, 0.3, 1),
+      transform 450ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .layer-hidden {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+  }
+
+  svg {
+    overflow: visible;
+    height: 100%;
+    max-height: 100%;
+    width: auto;
+    max-width: 100%;
+    cursor: pointer;
+    touch-action: none;
+    shape-rendering: geometricPrecision;
+    text-rendering: geometricPrecision;
+  }
+
+  /* Every bone and zone starts out greyed out and faded, so whatever has been
+     marked stands out in colour. :where() keeps this rule's weight at a
+     single class and element: enough to outrank each drawing's own .cls-N /
+     .st-N colours, and below every rule that follows. */
+  :where(.diagram-layer svg) :is(path, polygon, circle, ellipse) {
+    fill: var(--bone-unmarked);
+    stroke: var(--bone-unmarked-edge);
+    fill-opacity: 0.7;
+  }
+
+  /* Bones and regions that open a drawing of their own get a colour of their
+     own while unmarked: the skull, rib cage and feet always do, the scapulae,
+     hip bones and (in the spine view) vertebrae only in zone mode. The ids sit
+     in :where() so a mark inside always outranks the tint. Teeth and cartilage
+     are never recorded, so they keep the grey rather than invite a click. */
+  .skeleton-layer
+    :where(#skull, #spine_and_ribs, #left_foot, #right_foot)
+    :is(path, polygon, circle, ellipse):not(:where(#teeth *, [id*='cartilage'], [id*='cartilage'] *)),
+  &.zone-mode .skeleton-layer :where(#left_scapula, #right_scapula, #left_hip_bone, #right_hip_bone) :is(path, polygon, circle, ellipse),
+  &.zone-mode .ribs-layer :where([data-zone-drawing]) :is(path, polygon, circle, ellipse) {
+    fill: var(--bone-expandable);
+    stroke: var(--bone-expandable-edge);
+  }
+
+  /* The SVG's own .front-cls-N rules set fill and stroke on each path, so a
+     group can't tint its zones by inheritance — the colour has to land on the
+     shapes themselves. Two classes here beats the one-class .front-cls-N rules
+     on specificity, so no !important is needed. */
+  .is-selected,
+  .is-selected :is(path, polygon, circle, ellipse) {
+    fill: var(--bone-selected);
+    stroke: var(--accent);
+    stroke-width: 0.9px;
+  }
+
+  /* The picker's colour rides on the marked element as data-paint. Each state
+     only names its two colours; the rules below do the painting, so a group
+     hands its fill and edge down to its zones through inheritance the same way
+     it hands down the highlight. */
+  .is-selected[data-paint='present'] {
+    --paint-fill: var(--paint-present);
+    --paint-edge: var(--paint-present-edge);
+  }
+
+  .is-selected[data-paint='absent'] {
+    --paint-fill: var(--paint-absent);
+    --paint-edge: var(--paint-absent-edge);
+  }
+
+  .is-selected[data-paint='fragmentary'] {
+    --paint-fill: var(--paint-fragmentary);
+    --paint-edge: var(--paint-fragmentary-edge);
+  }
+
+  /* Same specificity note as above, with the attribute standing in for the
+     second class, so these still outrank the SVG's own .front-cls-N fills. */
+  .is-selected[data-paint],
+  .is-selected[data-paint] :is(path, polygon, circle, ellipse) {
+    fill: var(--paint-fill);
+    stroke: var(--paint-edge);
+    fill-opacity: 1;
+  }
+
+  /* A bone drawn here only whole, whose zones are marked in its own drawing
+     (see summariseZones in skeletonArtwork). Zones all marked alike look like
+     the bone marked that way; anything less takes the partial colour, a cue to
+     open the bone and see which zones. Never set on a bone that is marked in
+     its own right, so this doesn't need to outrank the marks above, only the
+     greyed-out and openable colours (hence the extra .diagram-layer). */
+  [data-zones='complete'] {
+    --paint-fill: var(--paint-present);
+    --paint-edge: var(--paint-present-edge);
+  }
+
+  [data-zones='absent'] {
+    --paint-fill: var(--paint-absent);
+    --paint-edge: var(--paint-absent-edge);
+  }
+
+  [data-zones='fragmentary'] {
+    --paint-fill: var(--paint-fragmentary);
+    --paint-edge: var(--paint-fragmentary-edge);
+  }
+
+  [data-zones='partial'] {
+    --paint-fill: var(--paint-partial);
+    --paint-edge: var(--paint-partial-edge);
+  }
+
+  .diagram-layer [data-zones],
+  .diagram-layer [data-zones] :is(path, polygon, circle, ellipse) {
+    fill: var(--paint-fill);
+    stroke: var(--paint-edge);
+    stroke-width: 0.9px;
+    fill-opacity: 1;
+  }
+
+  /* The feet are drawn at a much larger scale than the rest, so the outline
+     weight above all but vanishes on them. Marked bones there keep the
+     drawing's own weight instead. */
+  :is(.left-foot-layer, .right-foot-layer) :is(.is-selected, .is-selected :is(path, polygon, circle, ellipse)) {
+    stroke-width: 2.4px;
+  }
+
+  /* Interactive cues for everything a click opens rather than paints: soft
+     ambient blue glow without overwriting any bone colors or clipping at
+     viewBox boundary. The skull, rib cage and feet always open their drawing
+     from the full skeleton, front or back. The scapulae, hip bones and, inside
+     the rib cage, the vertebrae only do in zone mode, as bone mode marks them
+     where they are. */
+  .skeleton-layer :is(#skull, #spine_and_ribs, #left_foot, #right_foot),
+  &.zone-mode .skeleton-layer :is(#left_scapula, #right_scapula, #left_hip_bone, #right_hip_bone),
+  &.zone-mode .ribs-layer [data-zone-drawing] {
+    cursor: zoom-in;
+    transition: filter 0.25s ease;
+  }
+
+  .skeleton-layer :is(#skull, #spine_and_ribs, #left_foot, #right_foot):hover,
+  &.zone-mode .skeleton-layer :is(#left_scapula, #right_scapula, #left_hip_bone, #right_hip_bone):hover,
+  &.zone-mode .ribs-layer [data-zone-drawing]:hover {
+    filter: drop-shadow(0 0 5px rgba(14, 165, 233, 0.65)) drop-shadow(0 0 10px rgba(56, 189, 248, 0.35));
+  }
+
+  /* Teeth and cartilage are drawn but never recorded, so they don't invite a click. */
+  :is(#teeth, [id*='cartilage']) {
+    cursor: default;
+  }
+
+  /* PHASE 1: Skeleton layer smoothly zooming in (stays 100% visible while centering) */
+  .layer-zooming-in svg {
+    opacity: 1 !important;
+    transition: transform 550ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+    pointer-events: none;
+    will-change: transform;
+  }
+
+  /* PHASE 2: When fully zoomed in, skeleton layer holds its zoom and gently dissolves out */
+  .layer-zoomed-fade-out svg {
+    opacity: 0 !important;
+    transition: opacity 450ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+    pointer-events: none;
+    will-change: opacity;
+  }
+
+  /* Where the zoom lands is measured from the region being opened as it
+     starts, and handed to the layer as custom properties (see zoomStyle in
+     SkeletonPage): the origin is the centre of the region, the translate
+     carries that centre to the middle of where the detail drawing appears, and
+     the scale makes the region as big as that drawing. Shared by all three
+     phases so the hold and the fade never drift from the zoom that set them up. */
+  :is(.layer-zooming-in, .layer-zoomed-fade-out, .layer-zoomed-hold) svg {
+    transform-origin: var(--zoom-origin-x) var(--zoom-origin-y) !important;
+    transform: translate3d(var(--zoom-shift-x), var(--zoom-shift-y), 0) scale(var(--zoom-scale)) !important;
+  }
+
+  /* PHASE 2 (Top Layer): Skull front SVG slowly and seamlessly fades in directly over the zoomed skull */
+  .layer-fade-in svg {
+    opacity: 1 !important;
+    animation: skullSlowCrossFadeIn 450ms cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+    pointer-events: none;
+    will-change: opacity;
+  }
+
+  /* REVERSE: Skull front gently dissolves out as skeleton zooms back out */
+  .layer-fade-out svg {
+    opacity: 0 !important;
+    transition: opacity 280ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+    pointer-events: none;
+    will-change: opacity;
+  }
+
+  /* REVERSE: Skeleton layer holds zoomed position if needed */
+  .layer-zoomed-hold svg {
+    opacity: 1 !important;
+    pointer-events: none;
+  }
+
+  /* REVERSE: Outer layer zooms back out to full view simultaneously with toolbar retraction */
+  .layer-zooming-out svg {
+    animation: zoomOutFromDetail 500ms cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+    pointer-events: none;
+    will-change: transform;
+  }
+
+  /* 3D Perspective Flip Animations for Skeleton Front <-> Back View */
+  .layer-flip-out-front svg {
+    animation: flipOutToBack 250ms cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+    pointer-events: none;
+    will-change: transform, opacity;
+  }
+
+  .layer-flip-in-back svg {
+    animation: flipInFromFront 250ms cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+    pointer-events: none;
+    will-change: transform, opacity;
+  }
+
+  .layer-flip-out-back svg {
+    animation: flipOutToFront 250ms cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+    pointer-events: none;
+    will-change: transform, opacity;
+  }
+
+  .layer-flip-in-front svg {
+    animation: flipInFromBack 250ms cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+    pointer-events: none;
+    will-change: transform, opacity;
+  }
+}
+
+@keyframes flipOutToBack {
+  0% {
+    transform: perspective(1200px) rotateY(0deg) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: perspective(1200px) rotateY(-90deg) scale(0.94);
+    opacity: 0;
+  }
+}
+
+@keyframes flipInFromFront {
+  0% {
+    transform: perspective(1200px) rotateY(90deg) scale(0.94);
+    opacity: 0;
+  }
+  100% {
+    transform: perspective(1200px) rotateY(0deg) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes flipOutToFront {
+  0% {
+    transform: perspective(1200px) rotateY(0deg) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: perspective(1200px) rotateY(90deg) scale(0.94);
+    opacity: 0;
+  }
+}
+
+@keyframes flipInFromBack {
+  0% {
+    transform: perspective(1200px) rotateY(-90deg) scale(0.94);
+    opacity: 0;
+  }
+  100% {
+    transform: perspective(1200px) rotateY(0deg) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes skullSlowCrossFadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes zoomOutFromDetail {
+  0% {
+    transform-origin: var(--zoom-origin-x) var(--zoom-origin-y);
+    transform: translate3d(var(--zoom-shift-x), var(--zoom-shift-y), 0) scale(var(--zoom-scale));
+    opacity: 1;
+  }
+  100% {
+    transform-origin: var(--zoom-origin-x) var(--zoom-origin-y);
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 1;
+  }
+}
+
+.skeleton-preview {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+
+  svg {
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    max-width: 100%;
+    object-fit: contain;
+  }
+
+  /* Greyed out unless marked, as on the skeleton page. */
+  svg :where(path, polygon, circle, ellipse) {
+    fill: #e2e8f0;
+    stroke: #94a3b8;
+    fill-opacity: 0.7;
+  }
+
+  svg [data-preview-state],
+  svg [data-preview-state] :is(path, polygon, circle, ellipse) {
+    fill-opacity: 1 !important;
+  }
+
+  svg [data-preview-state='complete'],
+  svg [data-preview-state='present'],
+  svg [data-preview-state='complete'] :is(path, polygon, circle, ellipse),
+  svg [data-preview-state='present'] :is(path, polygon, circle, ellipse) {
+    fill: #10b981 !important;
+    stroke: #047857 !important;
+  }
+
+  svg [data-preview-state='absent'],
+  svg [data-preview-state='absent'] :is(path, polygon, circle, ellipse) {
+    fill: #ef4444 !important;
+    stroke: #b91c1c !important;
+  }
+
+  svg [data-preview-state='partial'],
+  svg [data-preview-state='partial'] :is(path, polygon, circle, ellipse) {
+    fill: #c084fc !important;
+    stroke: #7e22ce !important;
+  }
+
+  svg [data-preview-state='pathological'],
+  svg [data-preview-state='fragmentary'],
+  svg [data-preview-state='pathological'] :is(path, polygon, circle, ellipse),
+  svg [data-preview-state='fragmentary'] :is(path, polygon, circle, ellipse) {
+    fill: #3b82f6 !important;
+    stroke: #1d4ed8 !important;
+  }
+}
+
+/* Specimen Preview Card entrance and smooth container expansion */
+@keyframes previewFadeScaleIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-preview-card {
+  animation: previewFadeScaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.preview-expand-container {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: grid-template-rows 0.42s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.32s ease,
+              transform 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+.preview-expand-container.is-expanded {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.preview-expand-content {
+  overflow: hidden;
+  min-height: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-preview-card,
+  .preview-expand-container {
+    animation: none;
+    transition: none;
+  }
+}
+
